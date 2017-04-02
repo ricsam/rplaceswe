@@ -27,8 +27,8 @@
 	<h1>r/SwedenOnPlace städare</h1>
 	<h4>Allt som inte är <span style="color: rgba(255,0,252,1)">rosa</span> kommer scriptet försöka ändra</h4>
 
-	<img src="./swe2.bmp" alt="" id='disp_img'>
-	<img src="./swe2.bmp" alt="" id='buffer_img'>
+	<img src="./swe2.gif" alt="" id='disp_img'>
+	<img src="./swe2.gif" alt="" id='buffer_img'>
 	<canvas id='buffer'></canvas>
 
 	<br>
@@ -91,7 +91,7 @@
 
 
 			$('#start_data').click(() => {
-				$("#data_output").val(`var pixel_data = ${JSON.stringify(pixel_data)};
+				$("#data_output").val(`var pixel_data = ${JSON.stringify({data: Array.prototype.slice.call(pixel_data.data, 0)})};
 pixel_data.width = ${pixel_data.width};
 pixel_data.height = ${pixel_data.height};
 var _user_start_index = ${_user_start_index};
