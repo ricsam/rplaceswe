@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>r/SwedenOnPlace</title>
+	<style>
+		body {
+			text-align: center;
+		}
+		#disp_img {
+			margin: auto;
+		}
+		#buffer_img, #buffer {
+			display: none;
+		}
+		#modhash {
+			width: 400px;
+		}
+	</style>
+	<script
+  src="https://code.jquery.com/jquery-3.2.1.min.js"
+  integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+  crossorigin="anonymous"></script>
+</head>
+<body>
+
+	<h1>r/SwedenOnPlace plan</h1>
+
+	<img src="./swe_large.png" alt="" id='disp_img'>
+	<img src="./swe.png" alt="" id='buffer_img'>
+	<canvas id='buffer'></canvas>
+
+	<input type="button" id='start_data' value='Fixa datan'>
+	<br>
+	<textarea name="data" id="data_output" cols="30" rows="10"></textarea>
+	
+	<br>
+	<input type="button" id='start_script' value='Fixa scriptet'>
+	<br>
+	<textarea name="data" id="script_output" cols="30" rows="10"></textarea>
+
+
+
+	<script>
+
+		var buffer = document.getElementById('buffer'),
+			buffer_data = document.getElementById('buffer_img'),
+			properties = {},
+			pixel_data,
+			_user_start_index;
+
+		window.onload = function () {
+
+			document.getElementById('disp_img').width = (window.innerWidth - 20) + "";
+
+
+			init();
+
+		};
+
+
+		function init() {
+
+			$.getJSON('./data.json').then((data) => {
+
+
+
+				properties = data;
+
+				buffer.width = buffer_data.width = data.size.x;
+				buffer.height = buffer_data.height = data.size.y;
+
+				let c = buffer.getContext('2d');
+
+				c.drawImage(buffer_data, 0, 0);
+				c.getImageData(0, 0, buffer.width, buffer.height);
+
+				pixel_data = c.getImageData(0, 0, buffer.width, buffer.height);
+
+				setRandomStart();
+			});
+
+		}
+
+
+		function setRandomStart() {
+			const w = pixel_data.width,
+				h = pixel_data.height,
+				_user_start_index = Math.floor(Math.random()*((w*h)+1));
+
+
+			$('#start_data').click(() => {
+				$("#data_output").val(`var pixel_data = ${JSON.stringify(pixel_data)};
+pixel_data.width = ${pixel_data.width};
+pixel_data.height = ${pixel_data.height};
+var _user_start_index = ${_user_start_index};
+var properties = ${JSON.stringify(properties)};
+var modhash = window.reddit.modhash;
+console.clear();`);
+			});
+			$('#start_script').click(() => {
+
+				$("#script_output").val(`
+(function () {
+	function mapToPlaceColor(index) {
+		let color = [
+			pixel_data.data[index * 4 + 0],
+			pixel_data.data[index * 4 + 1],
+			pixel_data.data[index * 4 + 2],
+			pixel_data.data[index * 4 + 3]
+		];
+
+		color = color.join(",");
+
+
+		let i = 0,
+			len = properties.color_map.length;
+		while (i < len && color !== properties.color_map[i].from ) {
+			i++;
+		}
+
+
+		if (i === len) {
+			console.log(color, 'not found');
+			return -1;
+		}
+
+		return properties.color_map[i].to;
+	}
+
+
+	function find_error(index) {
+		const local_x = index % pixel_data.width,
+			local_y = Math.floor(index / pixel_data.width),
+			remote_x =  local_x + properties.offset.x,
+			remote_y = local_y + properties.offset.y;
+
+		$.get("https://www.reddit.com/api/place/pixel.json?x=" + remote_x + "&y=" + remote_y, (data, status, d) => {
+
+			let remote_color = data.color,
+				local_color = mapToPlaceColor(index, pixel_data);
+
+			d.repeat = true;
+
+			if (remote_color !== local_color && local_color >= 0) {
+				placeColor(remote_x, remote_y, local_color, remote_color, index);
+				d.repeat = false;
+			}
+
+
+		}).always((data, status, d) => {
+			if (d.repeat) {
+				find_error(index+1);
+				console.log("Everything is correct at (https://www.reddit.com/r/place/#x=" + remote_x + "&y=" + remote_y + ")");
+			} else {
+				console.log('done');
+			}
+		});
+	}
+
+
+	function placeColor(x, y, c, rc, index) {
+		console.log("%c Drawing color numer: " + c + " at " + x + ", " + y + " (https://www.reddit.com/r/place/#x=" + x + "&y=" + y + ")")
+
+		console.log('From:');
+		console.log("%c■", "color: rgba(" + properties.color_map[rc + 1].from + ")");
+
+		console.log('To:');
+		console.log("%c■", "color: rgba(" + properties.color_map[c + 1].from + ")");
+		$.ajax({ url: "https://www.reddit.com/api/place/draw.json", type: "POST",
+			headers: { "x-modhash": modhash }, data: { x: x, y: y, color: c }
+		}).done(() => {
+
+			let time_left = 5 * 60 * 1000 + 5000;
+
+			let int = setInterval(() => {
+
+				time_left = time_left - 1000;
+
+				console.log((time_left) / 1000 + ' sec')
+
+			}, 1000);
+
+			setTimeout(() => {
+				window.clearInterval(int);
+				find_error(_user_start_index);
+			}, time_left) 
+
+
+		}).error(() => {
+			console.log('error, prövar igen om 3 sekunder...');
+			setTimeout(() => {
+				find_error(index + 1);
+			}, 3000);
+		});
+
+	}
+
+	find_error(_user_start_index);
+}());
+console.clear();
+
+				`);
+			});
+
+		}
+
+
+
+		// function mapToPlaceColor(index) {
+		// 	let color = [
+		// 		pixel_data.data[index * 4 + 0],
+		// 		pixel_data.data[index * 4 + 1],
+		// 		pixel_data.data[index * 4 + 2],
+		// 		pixel_data.data[index * 4 + 3]
+		// 	];
+
+		// 	color = color.join(",");
+
+
+		// 	let i = 0,
+		// 		len = properties.color_map.length;
+		// 	while (i < len && color !== properties.color_map[i].from ) {
+		// 		i++;
+		// 	}
+
+
+		// 	if (i === len) {
+		// 		console.log(color, 'not found');
+		// 		return -1;
+		// 	}
+
+		// 	return properties.color_map[i].to;
+		// }
+
+
+		// function find_error(index) {
+		// 	const local_x = index % pixel_data.width,
+		// 		local_y = Math.floor(index / pixel_data.width),
+		// 		remote_x =  local_x + properties.offset.x,
+		// 		remote_y = local_y + properties.offset.y;
+
+		// 	$.get("https://www.reddit.com/api/place/pixel.json?x=" + remote_x + "&y=" + remote_y, (data, status, d) => {
+
+		// 		let remote_color = data.color,
+		// 			local_color = mapToPlaceColor(index, pixel_data);
+
+		// 		d.repeat = true;
+
+		// 		if (remote_color !== local_color && local_color >= 0) {
+		// 			placeColor(remote_x, remote_y, local_color, remote_color, index);
+		// 			d.repeat = false;
+		// 		}
+
+
+		// 	}).always((data, status, d) => {
+		// 		if (d.repeat) {
+		// 			find_error(index+1);
+		// 			console.log("Everything is correct at (https://www.reddit.com/r/place/#x=" + remote_x + "&y=" + remote_y + ")");
+		// 		} else {
+		// 			console.log('done');
+		// 		}
+		// 	});
+		// }
+
+
+		// function placeColor(x, y, c, rc, index) {
+		// 	console.log("%c Drawing color numer: " + c + " at " + x + ", " + y + " (https://www.reddit.com/r/place/#x=" + x + "&y=" + y + ")")
+
+		// 	console.log('From:');
+		// 	console.log("%c■", "color: rgba(" + properties.color_map[rc + 1].from + ")");
+
+		// 	console.log('To:');
+		// 	console.log("%c■", "color: rgba(" + properties.color_map[c + 1].from + ")");
+		// 	$.ajax({ url: "https://www.reddit.com/api/place/draw.json", type: "POST",
+		// 		headers: { "x-modhash": modhash }, data: { x: x, y: y, color: c }
+		// 	}).done(() => {
+
+		// 		let time_left = 5 * 60 * 1000 + 5000;
+
+		// 		let int = setInterval(() => {
+
+		// 			time_left = time_left - 1000;
+
+		// 			console.log((time_left) / 1000 + ' sec')
+
+		// 		}, 1000);
+
+		// 		setTimeout(() => {
+		// 			window.clearInterval(int);
+		// 			find_error(_user_start_index);
+		// 		}, time_left) 
+
+
+		// 	}).error(() => {
+		// 		console.log('error, prövar igen om 3 sekunder...');
+		// 		setTimeout(() => {
+		// 			find_error(index + 1);
+		// 		}, 3000);
+		// 	});
+
+		// }
+
+
+
+
+		 // 
+
+
+
+
+
+	</script>
+	
+</body>
+</html>
