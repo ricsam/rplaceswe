@@ -167,7 +167,7 @@ console.clear();`);
 
 		console.log('To:');
 		console.log("%c■", "color: rgba(" + properties.color_map[c + 1].from + ")");
-		modhash = window.reddit.modhash
+		modhash = window.reddit.modhash;
 		$.ajax({ url: "https://www.reddit.com/api/place/draw.json", type: "POST",
 			headers: { "x-modhash": modhash }, data: { x: x, y: y, color: c }
 		}).done(() => {
