@@ -1,5 +1,5 @@
 
-var __REMOTE_URL = "https://raw.githubusercontent.com/mikaelnordin/sweddit_rplace/master/sweddit_target.bmp";
+var __REMOTE_URL = "https://raw.githubusercontent.com/xpopy/reddit-placebot-sweden/master/target.bmp";
 var _user_random_start_index = true;
 var _user_start_index;
 
