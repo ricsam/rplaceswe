@@ -1,5 +1,5 @@
 #### Edits:
-Ifall någon vill göra ändringar i mallbilden så är det bara att skicka in en uppdaterad bild, tänk dock på att alla pixlar måste vara av EXAKT de färgerna som anges i daga.json filen alltså
+Ifall någon vill göra ändringar i mallbilden så är det bara att skicka in en uppdaterad bild, tänk på att alla pixlar måste av EXAKT någon av följande färger
 
 Ignorerad (rosa) ruta: rgb(255,0,255)
 
