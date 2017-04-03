@@ -1,7 +1,7 @@
 #### Edits:
 Ifall någon vill göra ändringar i mallbilden så är det bara att skicka in en uppdaterad bild, tänk dock på att alla pixlar måste vara av EXAKT de färgerna som anges i daga.json filen alltså
 
-Ignorerad (rosa) ruta: rgb(255,0,252)
+Ignorerad (rosa) ruta: rgb(255,0,255)
 
 Övriga färger:
 1. rgb(255,255,255)
