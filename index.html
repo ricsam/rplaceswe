@@ -30,24 +30,26 @@
 	<h1>/r/SwedenOnPlace städbot</h1>
 	<h4>Allt som inte är <span style="color: rgba(255,0,252,1)">rosa</span> kommer scriptet försöka ändra</h4>
 
-	<img src="./swe2.gif" alt="" id='disp_img'>
-	<img src="./swe2.gif" alt="" id='buffer_img'>
+	<img width="80%" src="./sweddit_target_20170403_1646.bmp" alt="" id='disp_img'>
 	<canvas id='buffer'></canvas>
 
 	<h4>Guide</h4>
 	<pre style="text-align: left">
-		(1) Tryck på Hämta datan.
-		(2) Kopiera allt (om det laggar ladda ner filen). 
+		(1) Kopiera scriptet
 		(3) gå till reddit.com och öppna developer console
 		  >> Chrome: tryck [ctrl + shift + j]
 		  >> Firefox: tryck [ctrl + shift + i] -> tryck på Konsol
 		  >> IE/edge: undvik denna webbläsare
 		  >> Safari, googla på developer console enable in Safari, man måste pilla lite med inställningar har jag för mig.
-		(4) pasta in den kopierade datan i javascript konsolen och tryck Enter.
-		(5) Kom tillbaka hit. Kopiera scriptet och pasta in i javascript konsolen på reddit 
-		(6) Tryck enter o sciptet kommer börja tugga.
-		(7) Ladda inte om sidan eller något sen, för att kolla cooldown o sånt öppna r/place i ny flik o kolla där
-		(...) Scriptet väljer en slumpmässig utgångspunkt som den påbörjar sökningen. 
+		(4) pasta in det kopierade scriptet i javascript konsolen.
+		(5) Tryck enter o sciptet kommer börja tugga.
+		(6) Ladda inte om sidan eller något sen, för att kolla cooldown o sånt öppna r/place i ny flik o kolla där
+
+
+		du kan välja en annan remote bmp genom att skriva
+		__REMOTE_URL = "http://enadress.com/bild.bmp"
+
+
 
 		Ifall du vill välja en egen fixed utgångspunkt (t.ex. i skräpiga problemområden),
 		så t.ex. för position (685, 60) skriver du in följande två kommandon konsolen:
@@ -55,25 +57,11 @@
 		_user_random_start_index = false;
 		_user_start_index = (685 - properties.offset.x)*(60 - properties.offset.y);
 
-
-		Ba byt ut 685 mot x-position och 60 mot y-position
-		och sen pasta in scriptet.
-
-
+		Byt ut 685 mot x-position och 60 mot y-position
 		OBS: bara testat i google chrome
-
 	</pre>
 	<br>
-	<input type="button" id='start_data' value='Hämta datan (get data)'>
-	<br>
 	<textarea name="data" id="data_output" cols="30" rows="10" onclick="this.select()"></textarea>
-	<br>
-	<div id="data_info">
-	Du kan också ladda ner data i fil genom att trycka 
-	<a href="#" id='download_link' download='data.txt'>här</a>
-	<br>
-	Kopiera innehållet i data.txt o pasta in i konsol.
-	</div>
 	<br>
 	<h4>Scriptet</h4>
 	Kopiera följande script: <input type="text" id='script_output' onclick='this.select()'>
@@ -102,15 +90,8 @@
 
 	<script>
 
-		var buffer = document.getElementById('buffer'),
-			buffer_data = document.getElementById('buffer_img'),
-			properties = {},
-			pixel_data,
-			_user_start_index;
 
 		window.onload = function () {
-
-			// document.getElementById('disp_img').width = (window.innerWidth - 20) + "";
 
 
 			init();
@@ -120,179 +101,19 @@
 
 		function init() {
 
-			$.getJSON('./data.json').then((data) => {
-
-
-
-				properties = data;
-
-				buffer.width = buffer_data.width = data.size.x;
-				buffer.height = buffer_data.height = data.size.y;
-
-				let c = buffer.getContext('2d');
-
-				c.drawImage(buffer_data, 0, 0);
-				c.getImageData(0, 0, buffer.width, buffer.height);
-
-				pixel_data = c.getImageData(0, 0, buffer.width, buffer.height);
-
-				setRandomStart();
+			$.ajax({
+				type: 'GET',
+				url: './script.js',
+				dataType: 'text',
+				cache: false
+			}).done(data => {
+				$("#script_output").val(data);
 			});
 
-		}
-
-
-
-		function setRandomStart() {
-			const w = pixel_data.width,
-				h = pixel_data.height,
-				_user_start_index = Math.floor(Math.random()*((w*h)+1));
-
-
-
-			$('#start_data').click(() => {
-				$("#data_output, #data_info").show();
-
-				let bd = `var pixel_data = ${JSON.stringify({data: Array.prototype.slice.call(pixel_data.data, 0)})};
-pixel_data.width = ${pixel_data.width};
-pixel_data.height = ${pixel_data.height};
-var _user_start_index = ${_user_start_index};
-var _user_random_start_index = true;
-var properties = ${JSON.stringify(properties)};
-var modhash = window.reddit.modhash;
-console.clear();`;
-
-				var blob = new Blob([bd], {type: "octet/stream"}),
-					url = window.URL.createObjectURL(blob);
-
-				$('#download_link').attr('href', url);
-				$("#data_output").val(bd);
-			});
-
-			$("#script_output").val(`
-(function () {
-	function mapToPlaceColor(index) {
-		let color = [
-			pixel_data.data[index * 4 + 0],
-			pixel_data.data[index * 4 + 1],
-			pixel_data.data[index * 4 + 2],
-			pixel_data.data[index * 4 + 3]
-		];
-
-		color = color.join(",");
-
-
-		let i = 0,
-			len = properties.color_map.length;
-		while (i < len && color !== properties.color_map[i].from ) {
-			i++;
-		}
-
-
-		if (i === len) {
-			console.log(color, 'not found');
-			return -1;
-		}
-
-		return properties.color_map[i].to;
-	}
-
-	function getRandomIndex() {
-		const w = pixel_data.width,
-			h = pixel_data.height;
-		
-		return Math.floor(Math.random()*((w*h)+1));
-	}
-
-
-
-	function find_error(index) {
-		const local_x = index % pixel_data.width,
-			local_y = Math.floor(index / pixel_data.width),
-			remote_x =  local_x + properties.offset.x,
-			remote_y = local_y + properties.offset.y;
-
-		$.get("https://www.reddit.com/api/place/pixel.json?x=" + remote_x + "&y=" + remote_y, (data, status, d) => {
-
-			let remote_color = data.color,
-				local_color = mapToPlaceColor(index, pixel_data);
-
-			d.repeat = true;
-
-			if (remote_color !== local_color && local_color >= 0) {
-				placeColor(remote_x, remote_y, local_color, remote_color, index);
-				d.repeat = false;
-			}
-
-
-		}).always((data, status, d) => {
-			if (d.repeat) {
-				find_error(index+1);
-				console.log("Everything is correct at (https://www.reddit.com/r/place/#x=" + remote_x + "&y=" + remote_y + ")");
-			} else {
-				console.log('done');
-			}
-		});
-	}
-
-
-	function placeColor(x, y, c, rc, index) {
-		console.log("%c Drawing color numer: " + c + " at " + x + ", " + y + " (https://www.reddit.com/r/place/#x=" + x + "&y=" + y + ")");
-
-		console.log('From:');
-		console.log("%c■", "color: rgba(" + properties.color_map[rc + 1].from + ")");
-
-		console.log('To:');
-		console.log("%c■", "color: rgba(" + properties.color_map[c + 1].from + ")");
-		modhash = window.reddit.modhash;
-		$.ajax({ url: "https://www.reddit.com/api/place/draw.json", type: "POST",
-			headers: { "x-modhash": modhash }, data: { x: x, y: y, color: c }
-		}).done(() => {
-
-			let time_left = 5 * 60 * 1000 + 5000;
-
-			let int = setInterval(() => {
-
-				time_left = time_left - 1000;
-
-				console.log((time_left) / 1000 + ' sec')
-
-			}, 1000);
-
-			setTimeout(() => {
-				window.clearInterval(int);
-				if (_user_random_start_index) {
-					_user_start_index = getRandomIndex();
-				}
-				find_error(_user_start_index);
-			}, time_left) 
-
-
-		}).error(() => {
-			console.log('error, prövar igen om 3 sekunder...');
-			setTimeout(() => {
-				if (pixel_data.width * pixel_data.height <= index) {
-					index = -1;
-				}
-				find_error(index + 1);
-			}, 3000);
-		});
-
-	}
-
-	find_error(_user_start_index);
-}());
-console.clear();
-
-			`);
 
 		}
-
-
-
-
 
 	</script>
-	
+
 </body>
 </html>
