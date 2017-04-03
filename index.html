@@ -43,6 +43,11 @@
 	<br>
 	<textarea name="data" id="data_output" cols="30" rows="10"></textarea>
 	<br>
+	Du kan också ladda ner data i fil genom att trycka 
+	<a href="#" id='download_link' download='data.txt'>här</a> (efter att du tryckt på knappen Hämta datan).
+	<br>
+	Kopiera innehållet i data.txt o pasta in i konsol
+	<br>
 	<input type="button" id='start_script' value='Hämta scriptet'>
 	<br>
 	<textarea name="data" id="script_output" cols="30" rows="10"></textarea>
@@ -97,14 +102,21 @@
 				_user_start_index = Math.floor(Math.random()*((w*h)+1));
 
 
+
 			$('#start_data').click(() => {
-				$("#data_output").val(`var pixel_data = ${JSON.stringify({data: Array.prototype.slice.call(pixel_data.data, 0)})};
+				let bd = `var pixel_data = ${JSON.stringify({data: Array.prototype.slice.call(pixel_data.data, 0)})};
 pixel_data.width = ${pixel_data.width};
 pixel_data.height = ${pixel_data.height};
 var _user_start_index = ${_user_start_index};
 var properties = ${JSON.stringify(properties)};
 var modhash = window.reddit.modhash;
-console.clear();`);
+console.clear();`;
+
+				var blob = new Blob([bd], {type: "octet/stream"}),
+					url = window.URL.createObjectURL(blob);
+
+				$('#download_link').attr('href', url);
+				$("#data_output").val(bd);
 			});
 			$('#start_script').click(() => {
 
