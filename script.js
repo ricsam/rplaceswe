@@ -1,5 +1,5 @@
 
-var __REMOTE_URL = "https://github.com/ricsam/rplaceswe/blob/gh-pages/sweddit_target_20170403_1646.bmp";
+var __REMOTE_URL = "https://raw.githubusercontent.com/ricsam/rplaceswe/gh-pages/sweddit_target_20170403_1646.bmp";
 var _user_random_start_index = true;
 var _user_start_index;
 
